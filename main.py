@@ -10,9 +10,9 @@ app = FastAPI(title="API AI Sentuh Tanahku (Genius + Memory Mode)")
 
 # --- KONFIGURASI KEAMANAN ---
 # Catatan: Jika nanti naik ke production, lebih aman pindahkan key ini ke file .env ya!
-SUPABASE_URL = "https://hzmlxnsnuycvqkpetxhe.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bWx4bnNudXljdnFrcGV0eGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNDM1ODQsImV4cCI6MjA4NjkxOTU4NH0.0ahv8dGihy3EtCeR-NTPUuh4faW8lnJyq-laH7KGxW0"
-GEMINI_API_KEY = "AIzaSyCAStXtATtpinWyay5RZvRusvZXYJmqGR4"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Struktur untuk menerima riwayat obrolan
 class ChatRequest(BaseModel):
@@ -102,7 +102,7 @@ def chat_endpoint(request: ChatRequest):
         {konteks_dokumen}
 
         ATURAN GAYA BICARA:
-        1. Sapaan: Panggil user "Kak", "Sobat", atau "Bestie". 
+        1. Sapaan: Panggil user "Kak". 
         2. Perhatikan [RIWAYAT PERCAKAPAN SEBELUMNYA]. Jika user merujuk ke obrolan sebelumnya, jawablah dengan nyambung berdasarkan riwayat tersebut.
         3. Bahasa percakapan harus luwes, asik, dan elegan. Jangan kaku sama sekali.
         4. Wajib pakai emoji yang relevan.
@@ -111,7 +111,7 @@ def chat_endpoint(request: ChatRequest):
 
         JURUS "NGELES" ELEGAN:
         Jika jawaban TIDAK ADA di referensi sama sekali, DILARANG KERAS mengarang/halusinasi. Gunakan gaya ngeles yang elegan dan tetap asik.
-        Contoh: "Duh maaf banget ya bestie 🙏, kalau soal yang satu ini Senta belum dapet bocoran datanya dari pusat nih. Coba deh mampir ke loket BPN terdekat atau cek langsung di aplikasi Sentuh Tanahku! Ada hal lain yang bisa Senta bantu?"
+        Contoh: "Duh maaf banget ya kak 🙏, kalau soal yang satu ini Senta belum dapet bocoran datanya dari pusat nih. Coba deh mampir ke loket BPN terdekat atau cek langsung di aplikasi Sentuh Tanahku! Ada hal lain yang bisa Senta bantu?"
 
         PERTANYAAN USER SAAT INI: {request.pesan}
         """

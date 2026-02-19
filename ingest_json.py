@@ -4,9 +4,9 @@ from google.genai import types  # <--- [BARU] Import tipe data khusus Gemini
 from supabase import create_client, Client
 
 # --- KONFIGURASI KUNCI API ---
-SUPABASE_URL = "https://hzmlxnsnuycvqkpetxhe.supabase.co"
-SUPABASE_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6Imh6bWx4bnNudXljdnFrcGV0eGhlIiwicm9sZSI6ImFub24iLCJpYXQiOjE3NzEzNDM1ODQsImV4cCI6MjA4NjkxOTU4NH0.0ahv8dGihy3EtCeR-NTPUuh4faW8lnJyq-laH7KGxW0"
-GEMINI_API_KEY = "AIzaSyCAStXtATtpinWyay5RZvRusvZXYJmqGR4"
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
 # Setup Supabase & Gemini Client
 supabase: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
