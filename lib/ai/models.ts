@@ -9,6 +9,15 @@ export type ChatModel = {
 };
 
 export const chatModels: ChatModel[] = [
+  // Google
+  {
+    id: "google/gemini-2.5-flash-lite",
+    //name: "Gemini 2.5 Flash Lite",
+    name: "Senta AI v1.0",
+    provider: "Senta AI",
+    description: "Ultra fast and affordable",
+  },
+  /*
   // Anthropic
   {
     id: "anthropic/claude-haiku-4.5",
@@ -41,13 +50,6 @@ export const chatModels: ChatModel[] = [
     provider: "openai",
     description: "Most capable OpenAI model",
   },
-  // Google
-  {
-    id: "google/gemini-2.5-flash-lite",
-    name: "Gemini 2.5 Flash Lite",
-    provider: "google",
-    description: "Ultra fast and affordable",
-  },
   {
     id: "google/gemini-3-pro-preview",
     name: "Gemini 3 Pro",
@@ -73,7 +75,7 @@ export const chatModels: ChatModel[] = [
     name: "Grok Code Fast",
     provider: "reasoning",
     description: "Reasoning optimized for code",
-  },
+  }, */
 ];
 
 // Group models by provider for UI
