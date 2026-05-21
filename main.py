@@ -55,7 +55,7 @@ def try_cerebras(prompt: str) -> str:
     cerebras_client = Cerebras(api_key=CEREBRAS_API_KEY)
     response = cerebras_client.chat.completions.create(
         messages=[{"role": "user", "content": prompt}],
-        model="llama3.1-8b",
+        model="llama3.1-70b",
     )
     return response.choices[0].message.content
 
@@ -107,11 +107,11 @@ def try_gemini(prompt: str) -> str:
 # Urutan fallback: LLM pertama dicoba dulu, kalau gagal lanjut ke berikutnya
 # Tambah LLM baru cukup tambah fungsi try_xxx() dan sisipkan di list ini
 FALLBACK_CHAIN = [
-    ("cerebras/llama3.1-8b",     try_cerebras,    lambda: bool(CEREBRAS_API_KEY)),
+    ("cerebras/llama3.1-70b",    try_cerebras,    lambda: bool(CEREBRAS_API_KEY)),
     ("groq/llama-3.3-70b",       try_groq,        lambda: bool(GROQ_API_KEY)),
-    ("mistral-large",            try_mistral,      lambda: bool(MISTRAL_API_KEY)),
+    ("mistral/mistral-large",    try_mistral,      lambda: bool(MISTRAL_API_KEY)),
     ("sambanova/llama-3.3-70b",  try_sambanova,    lambda: bool(SAMBANOVA_API_KEY)),
-    ("gemini-2.5-flash",         try_gemini,       lambda: bool(GEMINI_API_KEY)),
+    ("gemini/gemini-2.5-flash",  try_gemini,       lambda: bool(GEMINI_API_KEY)),
     ("cloudflare/llama-3.1-8b",  try_cloudflare,   lambda: bool(CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN)),
 ]
 
