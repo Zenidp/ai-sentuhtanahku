@@ -1,18 +1,19 @@
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel
 from google import genai
-from google.genai import types # <-- Tambahan import untuk konfigurasi dimensi
+from google.genai import types
+from groq import Groq
 import os
 import requests
 from typing import List, Dict
 
 app = FastAPI(title="API AI Sentuh Tanahku (Genius + Memory Mode)")
 
-# --- KONFIGURASI KEAMANAN ---
-# Catatan: Jika nanti naik ke production, lebih aman pindahkan key ini ke file .env ya!
+# --- KONFIGURASI ---
 SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GROQ_API_KEY = os.getenv("GROQ_API_KEY")
 
 # Struktur untuk menerima riwayat obrolan
 class ChatRequest(BaseModel):
@@ -24,17 +25,58 @@ class ChatRequest(BaseModel):
 def read_root():
     return {"status": "Sistem RAG Sentuh Tanahku (Genius + Memory Mode) Aktif!"}
 
+def try_groq(prompt: str) -> str:
+    groq_client = Groq(api_key=GROQ_API_KEY)
+    response = groq_client.chat.completions.create(
+        model="llama-3.3-70b-versatile",
+        messages=[{"role": "user", "content": prompt}],
+        temperature=0.7,
+        max_tokens=2048,
+    )
+    return response.choices[0].message.content
+
+def try_gemini(prompt: str) -> str:
+    gemini_client = genai.Client(api_key=GEMINI_API_KEY)
+    response = gemini_client.models.generate_content(
+        model="gemini-2.5-flash",
+        contents=prompt
+    )
+    return response.text
+
+# Urutan fallback: LLM pertama dicoba dulu, kalau gagal lanjut ke berikutnya
+# Tambah LLM baru cukup tambah fungsi try_xxx() dan sisipkan di list ini
+FALLBACK_CHAIN = [
+    ("groq/llama-3.3-70b", try_groq, lambda: bool(GROQ_API_KEY)),
+    ("gemini-2.5-flash",   try_gemini, lambda: bool(GEMINI_API_KEY)),
+]
+
+def generate_jawaban(prompt: str) -> tuple[str, str]:
+    """Coba LLM satu per satu sesuai urutan FALLBACK_CHAIN. Return (jawaban, model_label)."""
+    errors = []
+    for label, fn, has_key in FALLBACK_CHAIN:
+        if not has_key():
+            continue
+        try:
+            return fn(prompt), label
+        except Exception as e:
+            print(f"[fallback] {label} gagal: {e}")
+            errors.append(f"{label}: {e}")
+    raise Exception("Semua LLM gagal. Detail: " + " | ".join(errors))
+
+
 @app.post("/api/chat")
 def chat_endpoint(request: ChatRequest):
-    # Pengecekan API Key. Karena sudah diisi di atas, blok ini akan aman dilewati.
-    if not GEMINI_API_KEY or not SUPABASE_URL or not SUPABASE_KEY:
+    if not SUPABASE_URL or not SUPABASE_KEY:
         raise HTTPException(status_code=500, detail="Konfigurasi server belum lengkap (API Key hilang).")
+    if not GEMINI_API_KEY:
+        raise HTTPException(status_code=500, detail="GEMINI_API_KEY belum diset (wajib untuk embedding).")
 
     try:
-        client = genai.Client(api_key=GEMINI_API_KEY)
+        # Embedding selalu pakai Gemini karena knowledge base dibangun dengan dimensi 768
+        gemini_client = genai.Client(api_key=GEMINI_API_KEY)
 
         # 1. Jadikan pertanyaan sebagai vektor (DENGAN DIMENSI 768)
-        emb_response = client.models.embed_content(
+        emb_response = gemini_client.models.embed_content(
             model='gemini-embedding-001',
             contents=request.pesan,
             config=types.EmbedContentConfig(
@@ -116,15 +158,12 @@ def chat_endpoint(request: ChatRequest):
         PERTANYAAN USER SAAT INI: {request.pesan}
         """
 
-        ai_response = client.models.generate_content(
-            model='gemini-2.5-flash',
-            contents=prompt_sistem
-        )
+        jawaban, model_label = generate_jawaban(prompt_sistem)
 
         return {
             "status": "success",
-            "model_used": "gemini-2.5-flash",
-            "jawaban": ai_response.text,
+            "model_used": model_label,
+            "jawaban": jawaban,
             "sumber": sumber_list
         }
 
