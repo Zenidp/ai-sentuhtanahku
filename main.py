@@ -14,6 +14,11 @@ SUPABASE_URL = os.getenv("SUPABASE_URL")
 SUPABASE_KEY = os.getenv("SUPABASE_KEY")
 GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 GROQ_API_KEY = os.getenv("GROQ_API_KEY")
+CLOUDFLARE_ACCOUNT_ID = os.getenv("CLOUDFLARE_ACCOUNT_ID")
+CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN")
+CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY")
+MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
+SAMBANOVA_API_KEY = os.getenv("SAMBANOVA_API_KEY")
 
 # Struktur untuk menerima riwayat obrolan
 class ChatRequest(BaseModel):
@@ -25,6 +30,36 @@ class ChatRequest(BaseModel):
 def read_root():
     return {"status": "Sistem RAG Sentuh Tanahku (Genius + Memory Mode) Aktif!"}
 
+def try_cerebras(prompt: str) -> str:
+    response = requests.post(
+        "https://api.cerebras.ai/v1/chat/completions",
+        headers={"Authorization": f"Bearer {CEREBRAS_API_KEY}", "Content-Type": "application/json"},
+        json={"model": "llama3.3-70b", "messages": [{"role": "user", "content": prompt}], "max_tokens": 2048},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
+
+def try_mistral(prompt: str) -> str:
+    response = requests.post(
+        "https://api.mistral.ai/v1/chat/completions",
+        headers={"Authorization": f"Bearer {MISTRAL_API_KEY}", "Content-Type": "application/json"},
+        json={"model": "mistral-large-latest", "messages": [{"role": "user", "content": prompt}], "max_tokens": 2048},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
+
+def try_sambanova(prompt: str) -> str:
+    response = requests.post(
+        "https://api.sambanova.ai/v1/chat/completions",
+        headers={"Authorization": f"Bearer {SAMBANOVA_API_KEY}", "Content-Type": "application/json"},
+        json={"model": "Meta-Llama-3.3-70B-Instruct", "messages": [{"role": "user", "content": prompt}], "max_tokens": 2048},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
+
 def try_groq(prompt: str) -> str:
     groq_client = Groq(api_key=GROQ_API_KEY)
     response = groq_client.chat.completions.create(
@@ -34,6 +69,13 @@ def try_groq(prompt: str) -> str:
         max_tokens=2048,
     )
     return response.choices[0].message.content
+
+def try_cloudflare(prompt: str) -> str:
+    url = f"https://api.cloudflare.com/client/v4/accounts/{CLOUDFLARE_ACCOUNT_ID}/ai/run/@cf/meta/llama-3.1-8b-instruct"
+    headers = {"Authorization": f"Bearer {CLOUDFLARE_API_TOKEN}"}
+    response = requests.post(url, headers=headers, json={"prompt": prompt}, timeout=30)
+    response.raise_for_status()
+    return response.json()["result"]["response"]
 
 def try_gemini(prompt: str) -> str:
     gemini_client = genai.Client(api_key=GEMINI_API_KEY)
@@ -46,8 +88,12 @@ def try_gemini(prompt: str) -> str:
 # Urutan fallback: LLM pertama dicoba dulu, kalau gagal lanjut ke berikutnya
 # Tambah LLM baru cukup tambah fungsi try_xxx() dan sisipkan di list ini
 FALLBACK_CHAIN = [
-    ("groq/llama-3.3-70b", try_groq, lambda: bool(GROQ_API_KEY)),
-    ("gemini-2.5-flash",   try_gemini, lambda: bool(GEMINI_API_KEY)),
+    ("cerebras/llama-3.3-70b",   try_cerebras,    lambda: bool(CEREBRAS_API_KEY)),
+    ("groq/llama-3.3-70b",       try_groq,        lambda: bool(GROQ_API_KEY)),
+    ("mistral-large",            try_mistral,      lambda: bool(MISTRAL_API_KEY)),
+    ("sambanova/llama-3.3-70b",  try_sambanova,    lambda: bool(SAMBANOVA_API_KEY)),
+    ("gemini-2.5-flash",         try_gemini,       lambda: bool(GEMINI_API_KEY)),
+    ("cloudflare/llama-3.1-8b",  try_cloudflare,   lambda: bool(CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN)),
 ]
 
 def generate_jawaban(prompt: str) -> tuple[str, str]:
