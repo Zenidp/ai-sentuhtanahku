@@ -20,6 +20,9 @@ CLOUDFLARE_API_TOKEN = os.getenv("CLOUDFLARE_API_TOKEN")
 CEREBRAS_API_KEY = os.getenv("CEREBRAS_API_KEY")
 MISTRAL_API_KEY = os.getenv("MISTRAL_API_KEY")
 SAMBANOVA_API_KEY = os.getenv("SAMBANOVA_API_KEY")
+NVIDIA_NIM_API_KEY = os.getenv("NVIDIA_NIM_API_KEY")
+OPENROUTER_API_KEY = os.getenv("OPENROUTER_API_KEY")
+SCALEWAY_API_KEY = os.getenv("SCALEWAY_API_KEY")
 
 class ChatRequest(BaseModel):
     pesan: str
@@ -82,25 +85,66 @@ def try_cloudflare(prompt: str, model: str) -> str:
     response.raise_for_status()
     return response.json()["result"]["response"]
 
+def try_nvidia(prompt: str, model: str) -> str:
+    response = requests.post(
+        "https://integrate.api.nvidia.com/v1/chat/completions",
+        headers={"Authorization": f"Bearer {NVIDIA_NIM_API_KEY}", "Content-Type": "application/json"},
+        json={"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 2048},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
+
+def try_openrouter(prompt: str, model: str) -> str:
+    response = requests.post(
+        "https://openrouter.ai/api/v1/chat/completions",
+        headers={
+            "Authorization": f"Bearer {OPENROUTER_API_KEY}",
+            "Content-Type": "application/json",
+            "HTTP-Referer": "https://ai-sentuhtanahku-ui.vercel.app",
+            "X-Title": "Sentuh Tanahku AI",
+        },
+        json={"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 2048},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
+
+def try_scaleway(prompt: str, model: str) -> str:
+    response = requests.post(
+        "https://api.scaleway.ai/v1/chat/completions",
+        headers={"Authorization": f"Bearer {SCALEWAY_API_KEY}", "Content-Type": "application/json"},
+        json={"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 2048},
+        timeout=30,
+    )
+    response.raise_for_status()
+    return response.json()["choices"][0]["message"]["content"]
+
 # --- FALLBACK CHAIN: urutan kualitas terbaik dulu lintas semua provider ---
 # (provider, model, fn, has_key)
 FALLBACK_CHAIN = [
-    ("sambanova", "DeepSeek-V3.1",                             try_sambanova,  lambda: bool(SAMBANOVA_API_KEY)),                               # 671B
-    ("cerebras",  "qwen-3-235b-a22b-instruct-2507",            try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # 235B Preview
-    ("sambanova", "gpt-oss-120b",                              try_sambanova,  lambda: bool(SAMBANOVA_API_KEY)),                               # 120B
-    ("cerebras",  "gpt-oss-120b",                              try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # 120B
-    ("sambanova", "Meta-Llama-3.3-70B-Instruct",               try_sambanova,  lambda: bool(SAMBANOVA_API_KEY)),                               # 70B
-    ("groq",      "llama-3.3-70b-versatile",                   try_groq,       lambda: bool(GROQ_API_KEY)),                                    # 70B
-    ("mistral",   "mistral-large-2411",                        try_mistral,    lambda: bool(MISTRAL_API_KEY)),                                 # ~70B
-    ("cloudflare","@cf/meta/llama-3.3-70b-instruct-fp8-fast",  try_cloudflare, lambda: bool(CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN)),  # 70B quant
-    ("mistral",   "mistral-medium-2505",                       try_mistral,    lambda: bool(MISTRAL_API_KEY)),                                 # Medium
-    ("cerebras",  "zai-glm-4.7",                               try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # Preview
-    ("groq",      "llama-3.1-8b-instant",                      try_groq,       lambda: bool(GROQ_API_KEY)),                                    # 8B
-    ("mistral",   "mistral-small-2506",                        try_mistral,    lambda: bool(MISTRAL_API_KEY)),                                 # Small
-    ("cerebras",  "llama3.1-8b",                               try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # 8B
-    ("cloudflare","@cf/meta/llama-3.1-8b-instruct",            try_cloudflare, lambda: bool(CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN)),  # 8B
-    ("gemini",    "gemini-2.5-flash",                          try_gemini,     lambda: bool(GEMINI_API_KEY)),                                  # quota kecil
-    ("gemini",    "gemini-2.5-flash-lite",                     try_gemini,     lambda: bool(GEMINI_API_KEY)),                                  # quota kecil
+    ("sambanova",  "DeepSeek-V3.1",                                          try_sambanova,  lambda: bool(SAMBANOVA_API_KEY)),                               # 671B
+    ("cerebras",   "qwen-3-235b-a22b-instruct-2507",                         try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # 235B Preview
+    ("nvidia",     "nvidia/llama-3.1-nemotron-ultra-253b-v1",                try_nvidia,     lambda: bool(NVIDIA_NIM_API_KEY)),                              # 253B
+    ("openrouter", "nvidia/llama-3.1-nemotron-ultra-253b-v1:free",           try_openrouter, lambda: bool(OPENROUTER_API_KEY)),                              # 253B free
+    ("sambanova",  "gpt-oss-120b",                                           try_sambanova,  lambda: bool(SAMBANOVA_API_KEY)),                               # 120B
+    ("cerebras",   "gpt-oss-120b",                                           try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # 120B
+    ("sambanova",  "Meta-Llama-3.3-70B-Instruct",                            try_sambanova,  lambda: bool(SAMBANOVA_API_KEY)),                               # 70B
+    ("groq",       "llama-3.3-70b-versatile",                                try_groq,       lambda: bool(GROQ_API_KEY)),                                    # 70B
+    ("mistral",    "mistral-large-2411",                                     try_mistral,    lambda: bool(MISTRAL_API_KEY)),                                 # ~70B
+    ("cloudflare", "@cf/meta/llama-3.3-70b-instruct-fp8-fast",               try_cloudflare, lambda: bool(CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN)),  # 70B quant
+    ("nvidia",     "meta/llama-3.3-70b-instruct",                            try_nvidia,     lambda: bool(NVIDIA_NIM_API_KEY)),                              # 70B
+    ("openrouter", "meta-llama/llama-3.3-70b-instruct:free",                 try_openrouter, lambda: bool(OPENROUTER_API_KEY)),                              # 70B free
+    ("scaleway",   "llama-3.3-70b-instruct",                                 try_scaleway,   lambda: bool(SCALEWAY_API_KEY)),                                # 70B free
+    ("openrouter", "deepseek/deepseek-r1-distill-llama-70b:free",            try_openrouter, lambda: bool(OPENROUTER_API_KEY)),                              # 70B reasoning free
+    ("mistral",    "mistral-medium-2505",                                    try_mistral,    lambda: bool(MISTRAL_API_KEY)),                                 # Medium
+    ("cerebras",   "zai-glm-4.7",                                            try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # Preview
+    ("groq",       "llama-3.1-8b-instant",                                   try_groq,       lambda: bool(GROQ_API_KEY)),                                    # 8B
+    ("mistral",    "mistral-small-2506",                                     try_mistral,    lambda: bool(MISTRAL_API_KEY)),                                 # Small
+    ("cerebras",   "llama3.1-8b",                                            try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # 8B
+    ("cloudflare", "@cf/meta/llama-3.1-8b-instruct",                         try_cloudflare, lambda: bool(CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN)),  # 8B
+    ("gemini",     "gemini-2.5-flash",                                       try_gemini,     lambda: bool(GEMINI_API_KEY)),                                  # quota kecil
+    ("gemini",     "gemini-2.5-flash-lite",                                  try_gemini,     lambda: bool(GEMINI_API_KEY)),                                  # quota kecil
 ]
 
 def generate_jawaban(prompt: str) -> tuple[str, str, str]:
