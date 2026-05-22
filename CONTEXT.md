@@ -27,7 +27,7 @@ User bisa tanya seputar layanan BPN (Badan Pertanahan Nasional), dan AI menjawab
 ### Backend — `ai-sentuhtanahku-api`
 - **Language:** Python 3.11
 - **Framework:** FastAPI + Uvicorn
-- **LLM Step 3:** 6 provider, 16 model — urutan kualitas terbaik (lihat FALLBACK_CHAIN)
+- **LLM Step 3:** 9 provider, 29 model — urutan kualitas terbaik (lihat FALLBACK_CHAIN)
 - **Embedding Step 1:** Gemini embedding-001 (768 dimensi, wajib, tidak bisa diganti)
 - **Vector DB:** Supabase + pgvector
 - **Validation:** Pydantic v2
@@ -44,6 +44,7 @@ User bisa tanya seputar layanan BPN (Badan Pertanahan Nasional), dan AI menjawab
 | **Backend Health** | https://ai-sentuhtanahku-api.onrender.com/ |
 | **Backend Docs (Swagger)** | https://ai-sentuhtanahku-api.onrender.com/docs |
 | **Test Provider** | https://ai-sentuhtanahku-api.onrender.com/test-provider/{provider} |
+| **Test Model Spesifik** | https://ai-sentuhtanahku-api.onrender.com/test-provider/{provider}/{model} |
 
 **Cron Job:** cron-job.org → hit `GET /` setiap 5 menit (`*/5 * * * *`) untuk mencegah Render free tier spin down.
 
@@ -71,7 +72,10 @@ ai-sentuhtanahku-ui/
 ### Backend
 ```
 ai-sentuhtanahku-api/
-├── main.py                  # FastAPI app + FALLBACK_CHAIN 6 provider 16 model
+├── main.py                  # FastAPI app + FALLBACK_CHAIN 9 provider 29 model
+│                            # Endpoints: GET /, POST /api/chat,
+│                            #   GET /test-provider/{provider}
+│                            #   GET /test-provider/{provider}/{model}  ← BARU
 ├── requirements.txt         # Python dependencies (incl. groq, cerebras-cloud-sdk)
 ├── ingest_json.py           # Inject data dari JSON ke Supabase ← cara utama
 ├── ingest_pdf.py            # Inject dari PDF (folder: dokumen_sumber/)
@@ -92,36 +96,43 @@ User kirim pertanyaan
 [STEP 2] Vector Search → Supabase (match_bpn_knowledge)
          threshold: 0.5, top 3 dokumen
         ↓
-[STEP 3] Generate Jawaban → FALLBACK_CHAIN (16 model, 6 provider)
+[STEP 3] Generate Jawaban → FALLBACK_CHAIN (29 model, 9 provider)
          Urutan: kualitas terbaik dulu (model terbesar = jawaban terbaik)
          Kalau gagal/limit → otomatis coba model berikutnya
          Gemini disimpan paling akhir (quota paling kecil)
 ```
 
-**FALLBACK_CHAIN saat ini (urutan kualitas) — 22 model, 9 provider:**
+**FALLBACK_CHAIN saat ini (urutan kualitas) — 29 model, 9 provider:**
 ```
-1.  sambanova  / DeepSeek-V3.1                              (671B)
-2.  cerebras   / qwen-3-235b-a22b-instruct-2507             (235B Preview)
-3.  nvidia     / llama-3.1-nemotron-ultra-253b-v1           (253B)
-4.  openrouter / llama-3.1-nemotron-ultra-253b-v1:free      (253B free)
-5.  sambanova  / gpt-oss-120b                               (120B)
-6.  cerebras   / gpt-oss-120b                               (120B)
-7.  sambanova  / Meta-Llama-3.3-70B-Instruct                (70B)
-8.  groq       / llama-3.3-70b-versatile                    (70B)
-9.  mistral    / mistral-large-2411                         (~70B)
-10. cloudflare / llama-3.3-70b-instruct-fp8-fast            (70B quant)
-11. nvidia     / meta/llama-3.3-70b-instruct                (70B)
-12. openrouter / meta-llama/llama-3.3-70b-instruct:free     (70B free)
-13. scaleway   / llama-3.3-70b-instruct                     (70B free)
-14. openrouter / deepseek/deepseek-r1-distill-llama-70b:free(70B reasoning free)
-15. mistral    / mistral-medium-2505                        (Medium)
-16. cerebras   / zai-glm-4.7                                (Preview)
-17. groq       / llama-3.1-8b-instant                       (8B)
-18. mistral    / mistral-small-2506                         (Small)
-19. cerebras   / llama3.1-8b                                (8B)
-20. cloudflare / llama-3.1-8b-instruct                      (8B)
-21. gemini     / gemini-2.5-flash                           (quota kecil)
-22. gemini     / gemini-2.5-flash-lite                      (quota kecil)
+1.  sambanova  / DeepSeek-V3.1                                    (671B)
+2.  cerebras   / qwen-3-235b-a22b-instruct-2507                   (235B)
+3.  openrouter / nousresearch/hermes-3-llama-3.1-405b:free        (405B free)
+4.  openrouter / openrouter/owl-alpha                             (high-perf, 1M ctx free)
+5.  nvidia     / nvidia/nemotron-3-super-120b-a12b                (120B)
+6.  openrouter / openai/gpt-oss-120b:free                         (120B free)
+7.  openrouter / nvidia/nemotron-3-super-120b-a12b:free           (120B free)
+8.  scaleway   / qwen3-235b-a22b-instruct-2507                    (235B free)
+9.  sambanova  / gpt-oss-120b                                     (120B)
+10. cerebras   / gpt-oss-120b                                     (120B)
+11. scaleway   / gpt-oss-120b                                     (120B free)
+12. sambanova  / Meta-Llama-3.3-70B-Instruct                      (70B)
+13. groq       / llama-3.3-70b-versatile                          (70B)
+14. mistral    / mistral-large-2411                               (~70B)
+15. cloudflare / @cf/meta/llama-3.3-70b-instruct-fp8-fast         (70B quant)
+16. nvidia     / meta/llama-3.3-70b-instruct                      (70B)
+17. nvidia     / nvidia/llama-3.3-nemotron-super-49b-v1           (49B)
+18. openrouter / meta-llama/llama-3.3-70b-instruct:free           (70B free)
+19. scaleway   / llama-3.3-70b-instruct                           (70B free)
+20. openrouter / deepseek/deepseek-v4-flash:free                  (large free)
+21. mistral    / mistral-medium-2505                              (Medium)
+22. cerebras   / zai-glm-4.7                                      (Preview)
+23. groq       / llama-3.1-8b-instant                             (8B)
+24. mistral    / mistral-small-2506                               (Small)
+25. cerebras   / llama3.1-8b                                      (8B)
+26. nvidia     / nvidia/llama-3.1-nemotron-nano-8b-v1             (8B)
+27. cloudflare / @cf/meta/llama-3.1-8b-instruct                   (8B)
+28. gemini     / gemini-2.5-flash                                 (quota kecil)
+29. gemini     / gemini-2.5-flash-lite                            (quota kecil)
 ```
 
 **Menambah LLM baru:** Tambah fungsi `try_xxx(prompt, model)` dan sisipkan di `FALLBACK_CHAIN` di `main.py`.
@@ -165,7 +176,7 @@ SCALEWAY_API_KEY=****       # Opsional — isi dengan SCW_SECRET_KEY (1 juta tok
 - [x] Implementasi `FALLBACK_CHAIN` awal (Groq → Gemini)
 - [x] Tambah Groq SDK ke `requirements.txt`
 
-### Sudah Selesai (Sesi 22 Mei 2026)
+### Sudah Selesai (Sesi 22 Mei 2026 — Pagi)
 - [x] Expand FALLBACK_CHAIN ke 6 provider: Cerebras, Groq, Mistral, SambaNova, Gemini, Cloudflare
 - [x] Tambah `cerebras-cloud-sdk` ke `requirements.txt`
 - [x] Fix model name Cerebras: `gpt-oss-120b` (Production, 120B)
@@ -178,10 +189,19 @@ SCALEWAY_API_KEY=****       # Opsional — isi dengan SCW_SECRET_KEY (1 juta tok
 - [x] Fix Cloudflare model: upgrade ke `@cf/meta/llama-3.3-70b-instruct-fp8-fast`
 - [x] Semua 6 provider verified jalan via `curl /test-provider/{provider}`
 - [x] Kapasitas kalkulasi: ~32.400 req/hari → ~3.000–6.000 user/hari
+
+### Sudah Selesai (Sesi 22 Mei 2026 — Sore)
 - [x] Expand FALLBACK_CHAIN ke 9 provider: tambah NVIDIA NIM, OpenRouter, Scaleway
-- [x] 22 model dari 9 provider — tambah Nemotron 253B, DeepSeek R1 reasoning
 - [x] Tambah `try_nvidia()`, `try_openrouter()`, `try_scaleway()` di `main.py`
 - [x] Env vars baru: `NVIDIA_NIM_API_KEY`, `OPENROUTER_API_KEY`, `SCALEWAY_API_KEY`
+- [x] Fix OpenRouter model IDs — model lama tidak gratis, diganti yang verified free Mei 2026
+- [x] Tambah OpenRouter OWL Alpha (1M context, 1.2T token/minggu gratis)
+- [x] Fix NVIDIA: hapus `nemotron-ultra-253b` (deprecated) → ganti `nemotron-3-super-120b-a12b`
+- [x] Tambah semua model NVIDIA aktif: 120B, 49B, 8B
+- [x] Tambah endpoint `GET /test-provider/{provider}/{model}` — test per model spesifik
+- [x] Fix `try_openrouter` error handling: tampilkan response body jika format tidak dikenal
+- [x] Full test semua 29 model via curl — hasil: 17 ✅ langsung, sisanya 429 saat rapid testing (normal)
+- [x] FALLBACK_CHAIN final: **29 model, 9 provider**
 
 ### Belum Selesai / Next
 - [ ] Fix hardcoded API keys di `ingest_pdf.py`, `ingest_txt.py` → pindah ke `.env`
@@ -202,9 +222,14 @@ SCALEWAY_API_KEY=****       # Opsional — isi dengan SCW_SECRET_KEY (1 juta tok
 | Render free tier spin down setelah 15 menit idle | Cron job hit `GET /` setiap 5 menit |
 | API keys hardcoded di ingest scripts | Belum difix — `ingest_pdf.py`, `ingest_txt.py` masih hardcode |
 | Endpoint `/api/chat` publik tanpa auth | Belum difix |
-| LLM single point of failure | Fix: FALLBACK_CHAIN 16 model 6 provider |
+| LLM single point of failure | Fix: FALLBACK_CHAIN 29 model 9 provider |
 | Cerebras 404 model not found | Model ID harus `gpt-oss-120b` bukan `llama-3.3-70b` |
 | Mistral/Gemini tidak dikenal di test-provider | Label harus format `provider/model` agar split `/` benar |
+| NVIDIA nemotron-ultra-253b → 404 | Model deprecated, butuh H200/B200. Diganti `nemotron-3-super-120b-a12b` |
+| OpenRouter free model IDs berubah | Cek https://openrouter.ai/models?max_price=0 untuk model gratis terkini |
+| 429 saat test banyak model berturut-turut | Normal — rate limit per menit, bukan error permanen. Di production aman |
+| Scaleway 429 saat rapid testing | Free tier rate limit ketat per menit. Satu request per user = aman |
+| OpenRouter OWL Alpha response format berbeda | `try_openrouter` kini cek `choices` key dan tampilkan raw response jika tidak ada |
 
 ---
 
@@ -212,18 +237,24 @@ SCALEWAY_API_KEY=****       # Opsional — isi dengan SCW_SECRET_KEY (1 juta tok
 
 ### Arsitektur LLM
 - **Step 1 (Embedding):** Selalu Gemini — tidak bisa diganti tanpa re-ingest semua data Supabase
-- **Step 3 (Generate):** FALLBACK_CHAIN 16 model, urutan kualitas terbaik dulu
+- **Step 3 (Generate):** FALLBACK_CHAIN 29 model, urutan kualitas terbaik dulu
 - **Self-host Ollama:** Hanya Step 3, Step 1 tetap Gemini. Worth it kalau traffic > 5.000 user/hari
 - **Tidak ada env var `MODEL_PROVIDER`** — sistem otomatis, tidak perlu konfigurasi manual
+- **Rate limit 429 saat testing = normal** — setiap provider punya quota independent, tidak saling pengaruh
 
 ### Cara Test Provider
 ```bash
-curl https://ai-sentuhtanahku-api.onrender.com/test-provider/sambanova
-curl https://ai-sentuhtanahku-api.onrender.com/test-provider/cerebras
-curl https://ai-sentuhtanahku-api.onrender.com/test-provider/groq
-curl https://ai-sentuhtanahku-api.onrender.com/test-provider/mistral
-curl https://ai-sentuhtanahku-api.onrender.com/test-provider/cloudflare
-curl https://ai-sentuhtanahku-api.onrender.com/test-provider/gemini
+# Test semua model dari satu provider (ambil yang pertama sukses)
+BASE="https://ai-sentuhtanahku-api.onrender.com/test-provider"
+curl $BASE/sambanova && curl $BASE/cerebras && curl $BASE/openrouter
+curl $BASE/nvidia && curl $BASE/groq && curl $BASE/mistral
+curl $BASE/cloudflare && curl $BASE/scaleway && curl $BASE/gemini
+
+# Test model spesifik (endpoint BARU)
+curl "$BASE/groq/llama-3.3-70b-versatile"
+curl "$BASE/openrouter/meta-llama/llama-3.3-70b-instruct:free"
+curl "$BASE/nvidia/nvidia/nemotron-3-super-120b-a12b"
+curl "$BASE/scaleway/llama-3.3-70b-instruct"
 ```
 
 ### Cara Inject Knowledge ke Supabase
