@@ -126,6 +126,7 @@ FALLBACK_CHAIN = [
     ("sambanova",  "DeepSeek-V3.1",                                          try_sambanova,  lambda: bool(SAMBANOVA_API_KEY)),                               # 671B
     ("cerebras",   "qwen-3-235b-a22b-instruct-2507",                         try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # 235B
     ("openrouter", "nousresearch/hermes-3-llama-3.1-405b:free",              try_openrouter, lambda: bool(OPENROUTER_API_KEY)),                              # 405B free
+    ("openrouter", "openrouter/owl-alpha",                                   try_openrouter, lambda: bool(OPENROUTER_API_KEY)),                              # high-perf, 1M ctx, 1.2T token/week free
     ("nvidia",     "nvidia/llama-3.1-nemotron-ultra-253b-v1",                try_nvidia,     lambda: bool(NVIDIA_NIM_API_KEY)),                              # 253B
     ("openrouter", "openai/gpt-oss-120b:free",                               try_openrouter, lambda: bool(OPENROUTER_API_KEY)),                              # 120B free
     ("openrouter", "nvidia/nemotron-3-super-120b-a12b:free",                 try_openrouter, lambda: bool(OPENROUTER_API_KEY)),                              # 120B free
