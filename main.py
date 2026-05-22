@@ -105,10 +105,13 @@ def try_openrouter(prompt: str, model: str) -> str:
             "X-Title": "Sentuh Tanahku AI",
         },
         json={"model": model, "messages": [{"role": "user", "content": prompt}], "max_tokens": 2048},
-        timeout=30,
+        timeout=60,
     )
     response.raise_for_status()
-    return response.json()["choices"][0]["message"]["content"]
+    data = response.json()
+    if "choices" not in data:
+        raise Exception(f"Format respons tidak dikenal: {data}")
+    return data["choices"][0]["message"]["content"]
 
 def try_scaleway(prompt: str, model: str) -> str:
     response = requests.post(
