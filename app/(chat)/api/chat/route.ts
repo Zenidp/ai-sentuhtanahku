@@ -135,12 +135,11 @@ export async function POST(request: Request) {
             content: extractText(m)
         }));
 
-        let sentaAnswer = "Maaf bestie, Senta gagal terhubung ke server utama Render nih. 😢";
+        let sentaAnswer = "";
 
         // 3. Tembak ke API FastAPI Senta di Render
         try {
-            // ✅ TYPO URL SUDAH DIPERBAIKI (Ada garis miring sebelum api)
-            const API_RENDER_URL = "https://ai-sentuhtanahku-api.onrender.com/api/chat"; 
+            const API_RENDER_URL = "https://ai-sentuhtanahku-api.onrender.com/api/chat";
 
             const fastApiResponse = await fetch(API_RENDER_URL, {
                 method: "POST",
@@ -153,13 +152,20 @@ export async function POST(request: Request) {
             });
 
             if (fastApiResponse.ok) {
+                // Server balas sukses — ambil jawaban Senta
                 const data = await fastApiResponse.json();
-                sentaAnswer = data.jawaban;
+                sentaAnswer = data.jawaban
+                    || "Hmm, Senta lagi bingung nih, coba tanya lagi ya Kak 🙏";
             } else {
-                console.error("FastAPI Error:", await fastApiResponse.text());
+                // Server Render HIDUP tapi balas error (mis. 5xx dari FastAPI / LLM bermasalah)
+                const errText = await fastApiResponse.text().catch(() => "");
+                console.error(`FastAPI Error [${fastApiResponse.status}]:`, errText);
+                sentaAnswer = `Duh, mesin AI Senta lagi ada kendala teknis nih Kak (kode ${fastApiResponse.status}). Coba kirim ulang beberapa saat lagi ya 🙏`;
             }
         } catch (error) {
+            // Gagal MENJANGKAU server sama sekali (jaringan / timeout / server sleep/mati)
             console.error("Error nembak Render:", error);
+            sentaAnswer = "Maaf Kak, Senta lagi nggak bisa nyambung ke server utama nih 😢. Kemungkinan server-nya lagi \"bangun tidur\" (cold start). Coba refresh & kirim ulang pesannya ya!";
         }
 
         // 4. Kirim balasan FastAPI ke layar UI Vercel
