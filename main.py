@@ -93,6 +93,29 @@ class ChatRequest(BaseModel):
 def read_root():
     return {"status": "Sistem RAG Sentuh Tanahku (Genius + Memory Mode) Aktif!"}
 
+@app.get("/health/db")
+def health_db():
+    """Query murah ke Supabase, untuk di-ping cron/uptime monitor.
+
+    Free tier Supabase mem-pause project setelah ~7 hari tanpa aktivitas; satu
+    request seperti ini mereset penghitungnya. Sengaja TIDAK memanggil LLM
+    maupun embedding, jadi tidak membakar kuota provider mana pun.
+    """
+    if not SUPABASE_URL or not SUPABASE_KEY:
+        raise HTTPException(status_code=500, detail="Konfigurasi Supabase belum lengkap.")
+    try:
+        r = requests.get(
+            f"{SUPABASE_URL}/rest/v1/bpn_knowledge_base",
+            headers={"apikey": SUPABASE_KEY, "Authorization": f"Bearer {SUPABASE_KEY}"},
+            params={"select": "id", "limit": 1},
+            timeout=15,
+        )
+        r.raise_for_status()
+        return {"status": "ok", "db": "reachable", "rows_seen": len(r.json())}
+    except Exception as e:
+        print(f"[health_db] Error: {_redact(e)}")
+        raise HTTPException(status_code=503, detail="Database tidak dapat dijangkau.")
+
 # --- FUNGSI PER PROVIDER (semua terima prompt + model) ---
 
 def try_cerebras(prompt: str, model: str) -> str:
