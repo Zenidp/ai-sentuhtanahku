@@ -12,7 +12,7 @@ User bisa tanya seputar layanan BPN (Badan Pertanahan Nasional), dan AI menjawab
 
 ## 🛠️ Tech Stack
 
-### Frontend — `ai-sentuhtanahku-ui`
+### Frontend — `apps/web`
 - **Framework:** Next.js 16 (App Router)
 - **Language:** TypeScript 5.6
 - **AI SDK:** Vercel AI SDK 6
@@ -24,7 +24,7 @@ User bisa tanya seputar layanan BPN (Badan Pertanahan Nasional), dan AI menjawab
 - **Testing:** Playwright E2E
 - **Linter:** Biome (ganti ESLint+Prettier)
 
-### Backend — `ai-sentuhtanahku-api`
+### Backend — `apps/api`
 - **Language:** Python 3.11
 - **Framework:** FastAPI + Uvicorn
 - **LLM Step 3:** 9 provider, 29 model — urutan kualitas terbaik (lihat FALLBACK_CHAIN)
@@ -52,9 +52,11 @@ User bisa tanya seputar layanan BPN (Badan Pertanahan Nasional), dan AI menjawab
 
 ## 📁 Struktur Folder Penting
 
+> **Update Juli 2026:** kedua repo lama (`ai-sentuhtanahku-api` + `ai-sentuhtanahku-ui`) sudah digabung menjadi **satu monorepo** dengan riwayat git lengkap. Frontend kini di `apps/web/`, backend di `apps/api/`. Deploy tetap terpisah (Vercel & Render) via setting Root Directory — lihat `docs/DEPLOYMENT.md`.
+
 ### Frontend
 ```
-ai-sentuhtanahku-ui/
+apps/web/
 ├── app/(auth)/              # Login, register, NextAuth endpoints
 ├── app/(chat)/              # Halaman chat utama
 │   ├── api/chat/route.ts    # Jembatan ke FastAPI backend
@@ -71,16 +73,18 @@ ai-sentuhtanahku-ui/
 
 ### Backend
 ```
-ai-sentuhtanahku-api/
+apps/api/
 ├── main.py                  # FastAPI app + FALLBACK_CHAIN 9 provider 29 model
-│                            # Endpoints: GET /, POST /api/chat,
+│                            # Endpoints: GET /, GET /health/db, POST /api/chat,
 │                            #   GET /test-provider/{provider}
-│                            #   GET /test-provider/{provider}/{model}  ← BARU
+│                            #   GET /test-provider/{provider}/{model}
 ├── requirements.txt         # Python dependencies (incl. groq, cerebras-cloud-sdk)
-├── ingest_json.py           # Inject data dari JSON ke Supabase ← cara utama
-├── ingest_pdf.py            # Inject dari PDF (folder: dokumen_sumber/)
-├── ingest_txt.py            # Inject dari TXT (folder: dokumen_sumber_txt/)
-└── data_bpn.json            # Knowledge base BPN utama
+├── data/data_bpn.json       # Knowledge base BPN utama
+└── scripts/
+    ├── ingest_json.py       # Inject data dari JSON ke Supabase ← cara utama
+    ├── ingest_pdf.py        # Inject dari PDF (folder: dokumen_sumber/)
+    ├── ingest_txt.py        # Inject dari TXT (folder: dokumen_sumber_txt/)
+    └── set_render_gemini_keys.py  # Set GEMINI_API_KEYS di Render via API
 ```
 
 ---

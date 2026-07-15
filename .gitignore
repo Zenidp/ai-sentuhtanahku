@@ -1,1 +1,36 @@
+# === OS / editor junk ===
+*Zone.Identifier
+.DS_Store
+Thumbs.db
+*.code-workspace
+
+# === Environment & secrets ===
 .env
+.env.*
+!.env.example
+
+# === Python ===
+__pycache__/
+*.py[cod]
+.venv/
+venv/
+.mypy_cache/
+.ruff_cache/
+.pytest_cache/
+
+# === Node / Next.js ===
+node_modules/
+.next/
+out/
+.turbo/
+.vercel/
+*.tsbuildinfo
+package-lock.json
+npm-debug.log*
+pnpm-debug.log*
+
+# === Test artifacts ===
+coverage/
+test-results/
+playwright-report/
+blob-report/
