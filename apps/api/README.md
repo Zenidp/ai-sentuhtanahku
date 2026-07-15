@@ -40,8 +40,10 @@ apps/api/
 ├── requirements.txt   # Dependensi produksi
 ├── .env.example       # Template environment variables
 ├── data/
-│   └── data_bpn.json  # Knowledge base sumber (SOP & regulasi BPN)
+│   ├── data_bpn.json     # Dataset awal (20 dokumen, historis)
+│   └── kb_snapshot.json  # Snapshot LENGKAP KB produksi (120 dokumen, tanpa embedding)
 └── scripts/           # Alat bantu operasional (bukan bagian runtime API)
+    ├── export_kb.py             # Export KB produksi → data/kb_snapshot.json (backup + audit)
     ├── ingest_json.py           # Injeksi data/data_bpn.json ke Supabase
     ├── ingest_pdf.py            # Injeksi dokumen PDF
     ├── ingest_pdf_mulai_dari.py # Injeksi PDF, lanjut dari halaman tertentu
@@ -56,6 +58,8 @@ Jalankan script ingest dari folder `apps/api` agar path relatif benar, contoh:
 ```bash
 python scripts/ingest_json.py
 ```
+
+> **Sumber kebenaran isi KB adalah tabel `bpn_knowledge_base` di Supabase** (120 dokumen), bukan `data_bpn.json`. Untuk memperbaiki jawaban Senta yang keliru: edit kolom `content` baris terkait di Supabase (tanpa perlu re-embedding selama `content_to_embed` tidak berubah), lalu jalankan `python scripts/export_kb.py` dan commit `data/kb_snapshot.json` agar perubahan terlacak di git.
 
 ## Deployment (Render)
 
