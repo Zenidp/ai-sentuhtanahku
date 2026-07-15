@@ -203,6 +203,16 @@ SCALEWAY_API_KEY=****       # Opsional — isi dengan SCW_SECRET_KEY (1 juta tok
 - [x] Full test semua 29 model via curl — hasil: 17 ✅ langsung, sisanya 429 saat rapid testing (normal)
 - [x] FALLBACK_CHAIN final: **29 model, 9 provider**
 
+### Sudah Selesai (Sesi 22 Mei 2026 — Malam)
+- [x] Analisis kelayakan pindah dari Vercel Pro ke Vercel Hobby
+- [x] Identifikasi env vars yang benar-benar dipakai kode: hanya `AUTH_SECRET`, `POSTGRES_URL`, `REDIS_URL` (opsional), `BLOB_READ_WRITE_TOKEN` (opsional)
+- [x] Backup env vars lama via `vercel env pull .env.backup`
+- [x] Buat project baru di Vercel Hobby (`duhaperbangga-3245's projects`)
+- [x] Import semua env vars lama ke project Hobby baru
+- [x] Deploy berhasil — chat ke AI berfungsi normal
+- [x] URL live dikonfigurasi ulang ke `https://ai-sentuhtanahku-ui.vercel.app/`
+- [x] Project lama di `solinkifydev` (Pro, Overdue) dihapus
+
 ### Belum Selesai / Next
 - [ ] Fix hardcoded API keys di `ingest_pdf.py`, `ingest_txt.py` → pindah ke `.env`
 - [ ] Aktifkan artifact tools (createDocument, updateDocument) di frontend
@@ -230,6 +240,8 @@ SCALEWAY_API_KEY=****       # Opsional — isi dengan SCW_SECRET_KEY (1 juta tok
 | 429 saat test banyak model berturut-turut | Normal — rate limit per menit, bukan error permanen. Di production aman |
 | Scaleway 429 saat rapid testing | Free tier rate limit ketat per menit. Satu request per user = aman |
 | OpenRouter OWL Alpha response format berbeda | `try_openrouter` kini cek `choices` key dan tampilkan raw response jika tidak ada |
+| SambaNova DeepSeek-V3.1 selalu 429 di production | Quota habis/rate limit harian. Dibiarkan di chain — akan otomatis skip ke model berikutnya |
+| Vercel Pro `solinkifydev` status Overdue | Project dipindah ke Vercel Hobby `duhaperbangga-3245's projects` — lebih hemat, semua fitur tetap jalan |
 
 ---
 
