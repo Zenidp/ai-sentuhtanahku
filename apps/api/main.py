@@ -243,8 +243,8 @@ FALLBACK_CHAIN = [
     ("cerebras",   "llama3.1-8b",                                            try_cerebras,   lambda: bool(CEREBRAS_API_KEY)),                                # 8B
     ("nvidia",     "nvidia/llama-3.1-nemotron-nano-8b-v1",                   try_nvidia,     lambda: bool(NVIDIA_NIM_API_KEY)),                              # 8B
     ("cloudflare", "@cf/meta/llama-3.1-8b-instruct",                         try_cloudflare, lambda: bool(CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN)),  # 8B
-    ("gemini",     "gemini-2.5-flash",                                       try_gemini,     lambda: bool(GEMINI_API_KEYS)),                                  # quota kecil
-    ("gemini",     "gemini-2.5-flash-lite",                                  try_gemini,     lambda: bool(GEMINI_API_KEYS)),                                  # quota kecil
+    ("gemini",     "gemini-3.6-flash",                                       try_gemini,     lambda: bool(GEMINI_API_KEYS)),                                  # quota kecil
+    ("gemini",     "gemini-flash-lite-latest",                               try_gemini,     lambda: bool(GEMINI_API_KEYS)),                                  # quota kecil; alias "latest" agar tidak mati saat model di-pensiunkan
 ]
 
 def generate_jawaban(prompt: str) -> tuple[str, str, str]:
